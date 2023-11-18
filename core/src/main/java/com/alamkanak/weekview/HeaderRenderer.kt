@@ -7,6 +7,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import android.text.StaticLayout
+import android.os.Build
 import android.text.TextPaint
 import android.util.SparseArray
 import androidx.collection.ArrayMap
@@ -433,9 +434,15 @@ private class HeaderDrawer(
         val right = (left + height)
 
         if (allDayEventsExpanded) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                upArrow.setTint(viewState.headerTextPaint.color)
+            }
             upArrow.setBounds(left, top, right, bottom)
             upArrow.draw(this@drawAllDayEventsToggleArrow)
         } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                downArrow.setTint(viewState.headerTextPaint.color)
+            }
             downArrow.setBounds(left, top, right, bottom)
             downArrow.draw(this@drawAllDayEventsToggleArrow)
         }

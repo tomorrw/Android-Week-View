@@ -10,8 +10,10 @@ internal class TextFitter(
     private val spannableStringBuilder = SpannableStringBuilder()
 
     fun fitAllDayEvent(eventChip: EventChip): StaticLayout {
-        val textPaint = viewState.getTextPaint(eventChip.event)
-        return eventChip.getText(includeSubtitle = false).toTextLayout(textPaint, width = Int.MAX_VALUE)
+        return eventChip.fitText(
+            availableWidth = (eventChip.bounds.right - (eventChip.bounds.left + (2*viewState.singleDayHorizontalPadding))).toInt(),
+            availableHeight = (eventChip.bounds.bottom - eventChip.bounds.top).toInt()
+        )
     }
 
     fun fitSingleEvent(eventChip: EventChip, availableWidth: Int, availableHeight: Int): StaticLayout {
