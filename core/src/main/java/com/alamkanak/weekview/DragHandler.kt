@@ -85,8 +85,8 @@ internal class DragHandler(
     private fun updateDraggedEvent(newStartTime: Calendar) {
         val originalEvent = draggedEvent ?: return
         val updatedEvent = originalEvent.createCopy(
-            startTime = newStartTime,
-            endTime = newStartTime.plusMinutes(originalEvent.durationInMinutes),
+            startTime = if(originalEvent.isAllDay) newStartTime.atStartOfDay else newStartTime ,
+            endTime = if(originalEvent.isAllDay) newStartTime.atEndOfDay else newStartTime.plusMinutes(originalEvent.durationInMinutes),
         )
 
         val eventsProcessor = eventsProcessorProvider() ?: return
@@ -94,6 +94,7 @@ internal class DragHandler(
     }
 
     private fun scrollIfNecessary(e: MotionEvent) {
+        if(draggedEvent?.isAllDay == true) return
         val isAtTopOfCalendarArea = (e.y - viewState.calendarGridBounds.top) < SCROLL_THRESHOLD
         val isAtBottomOfCalendarArea = (viewState.calendarGridBounds.bottom - e.y) < SCROLL_THRESHOLD
         val isAtStartOfCalendarArea = (e.x - viewState.calendarGridBounds.left) < SCROLL_THRESHOLD

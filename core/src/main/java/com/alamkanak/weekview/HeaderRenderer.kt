@@ -235,12 +235,16 @@ private class AllDayEventsUpdater(
 
         viewState.currentAllDayEventHeight = maximumChipHeight
 
-        val maximumChipsPerDay = eventsLabelLayouts.keys
-            .groupBy { it.event.startTime.toEpochDays() }
-            .values
-            .maxByOrNull { it.size }?.size ?: 0
+        val maximumChipsPerDay: MutableList<Int> = mutableListOf()
+        viewState.dateRange.forEach { date ->
+            maximumChipsPerDay.add(eventsLabelLayouts.keys.filter {
+                (it.event.startTime..it.event.endTime).contains(
+                    date
+                )
+            }.toList().count())
+        }
 
-        viewState.maxNumberOfAllDayEvents = maximumChipsPerDay
+        viewState.maxNumberOfAllDayEvents = maximumChipsPerDay.maxOrNull() ?: 0
     }
 
     private fun EventChip.updateBounds(index: Int, startPixel: Float) {
@@ -273,7 +277,7 @@ internal class AllDayEventsDrawer(
     override fun draw(canvas: Canvas) = canvas.drawInBounds(viewState.headerBounds) {
         for (date in viewState.dateRange) {
             val events = allDayEventLayouts
-                .filter { it.key.event.startTime.isSameDate(date) }
+                .filter { (it.key.event.startTime..it.key.event.endTime).contains(date) }
                 .toList()
 
             if (viewState.arrangeAllDayEventsVertically) {
@@ -295,7 +299,10 @@ internal class AllDayEventsDrawer(
         // we set isHidden to true for all events that aren't shown in the collapsed state.
         events.forEach { it.first.isHidden = false }
 
-        if (viewState.allDayEventsExpanded || events.size <= 2) {
+        val similarEventsCount =
+            events.groupBy { it.first.eventId }.values.maxByOrNull { it.size > 1 }?.size ?: 0
+
+        if (viewState.allDayEventsExpanded || events.size - similarEventsCount <= 2) {
             // Draw them all!
             for ((eventChip, textLayout) in events) {
                 eventChipDrawer.draw(eventChip, canvas = this, textLayout)
@@ -304,9 +311,12 @@ internal class AllDayEventsDrawer(
             val (firstEventChip, firstTextLayout) = events[0]
             eventChipDrawer.draw(firstEventChip, canvas = this, firstTextLayout)
 
-            val needsExpandInfo = events.size >= 2
+            val needsExpandInfo = events.size - similarEventsCount >= 2
             if (needsExpandInfo) {
-                drawExpandInfo(eventsCount = events.size - 1, priorEventChip = firstEventChip)
+                drawExpandInfo(
+                    eventsCount = events.size - similarEventsCount - 1,
+                    priorEventChip = firstEventChip
+                )
                 events.drop(1).forEach { it.first.isHidden = true }
             } else {
                 val (secondEventChip, secondTextLayout) = events[1]
@@ -332,9 +342,9 @@ internal class AllDayEventsDrawer(
         }
 
         val y = priorEventChip.bounds.bottom +
-            viewState.eventMarginVertical +
-            viewState.eventPaddingVertical +
-            textPaint.textSize
+                viewState.eventMarginVertical +
+                viewState.eventPaddingVertical +
+                textPaint.textSize
 
         drawText(text, x, y, textPaint)
     }
