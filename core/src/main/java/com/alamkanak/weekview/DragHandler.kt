@@ -86,7 +86,7 @@ internal class DragHandler(
         val originalEvent = draggedEvent ?: return
         val updatedEvent = originalEvent.createCopy(
             startTime = if(originalEvent.isAllDay) newStartTime.atStartOfDay else newStartTime ,
-            endTime = if(originalEvent.isAllDay) newStartTime.atEndOfDay else newStartTime.plusMinutes(originalEvent.durationInMinutes),
+            endTime = newStartTime.plusMinutes(originalEvent.durationInMinutes),
         )
 
         val eventsProcessor = eventsProcessorProvider() ?: return
