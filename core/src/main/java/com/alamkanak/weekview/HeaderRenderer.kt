@@ -94,7 +94,7 @@ private class HeaderUpdater(
     private fun updateHeaderHeight(
         dateLabels: List<StaticLayout>
     ) {
-        val maximumLayoutHeight = dateLabels.map { it.height.toFloat() }.maxOrNull() ?: 0f
+        val maximumLayoutHeight = dateLabels.maxOfOrNull { it.height.toFloat() } ?: 0f
         viewState.dateLabelHeight = maximumLayoutHeight
 
         val currentHeaderHeight = viewState.headerHeight
@@ -198,7 +198,8 @@ private class AllDayEventsUpdater(
         get() {
             val didScrollHorizontally = previousHorizontalOrigin != viewState.currentOrigin.x
             val dateRange = viewState.dateRange
-            val eventChips = eventChipsCacheProvider()?.allDayEventChipsInDateRange(dateRange).orEmpty()
+            val eventChips =
+                eventChipsCacheProvider()?.allDayEventChipsInDateRange(dateRange).orEmpty()
             val containsNewChips = eventChips.any { it.bounds.isEmpty }
             return didScrollHorizontally || containsNewChips
         }
@@ -229,22 +230,17 @@ private class AllDayEventsUpdater(
             }
         }
 
-        val maximumChipHeight = eventsLabelLayouts.keys
-            .map { it.bounds.height().roundToInt() }
-            .maxOrNull() ?: 0
+        val maximumChipHeight = eventsLabelLayouts.keys.maxOfOrNull {
+            it.bounds.height().roundToInt()
+        } ?: 0
 
         viewState.currentAllDayEventHeight = maximumChipHeight
 
-        val maximumChipsPerDay: MutableList<Int> = mutableListOf()
-        viewState.dateRange.forEach { date ->
-            maximumChipsPerDay.add(eventsLabelLayouts.keys.filter {
-                (it.event.startTime..it.event.endTime).contains(
-                    date
-                )
-            }.toList().count())
-        }
-
-        viewState.maxNumberOfAllDayEvents = maximumChipsPerDay.maxOrNull() ?: 0
+        viewState.maxNumberOfAllDayEvents = viewState.dateRange.maxOfOrNull { date ->
+            eventsLabelLayouts.keys.count {
+                it.startTime.isSameDate(date)
+            }
+        } ?: 0
     }
 
     private fun EventChip.updateBounds(index: Int, startPixel: Float) {
@@ -277,7 +273,7 @@ internal class AllDayEventsDrawer(
     override fun draw(canvas: Canvas) = canvas.drawInBounds(viewState.headerBounds) {
         for (date in viewState.dateRange) {
             val events = allDayEventLayouts
-                .filter { (it.key.event.startTime..it.key.event.endTime).contains(date) }
+                .filter { it.key.startTime.isSameDate(date) }
                 .toList()
 
             if (viewState.arrangeAllDayEventsVertically) {
@@ -299,10 +295,8 @@ internal class AllDayEventsDrawer(
         // we set isHidden to true for all events that aren't shown in the collapsed state.
         events.forEach { it.first.isHidden = false }
 
-        val similarEventsCount =
-            events.groupBy { it.first.eventId }.values.maxByOrNull { it.size > 1 }?.size ?: 0
+        if (viewState.allDayEventsExpanded || events.size <= 2) {
 
-        if (viewState.allDayEventsExpanded || events.size - similarEventsCount <= 2) {
             // Draw them all!
             for ((eventChip, textLayout) in events) {
                 eventChipDrawer.draw(eventChip, canvas = this, textLayout)
@@ -311,10 +305,10 @@ internal class AllDayEventsDrawer(
             val (firstEventChip, firstTextLayout) = events[0]
             eventChipDrawer.draw(firstEventChip, canvas = this, firstTextLayout)
 
-            val needsExpandInfo = events.size - similarEventsCount >= 2
+            val needsExpandInfo = events.size >= 2
             if (needsExpandInfo) {
                 drawExpandInfo(
-                    eventsCount = events.size - similarEventsCount - 1,
+                    eventsCount = events.size - 1,
                     priorEventChip = firstEventChip
                 )
                 events.drop(1).forEach { it.first.isHidden = true }

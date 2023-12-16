@@ -84,8 +84,9 @@ internal class DragHandler(
 
     private fun updateDraggedEvent(newStartTime: Calendar) {
         val originalEvent = draggedEvent ?: return
+        val newStartTime = if (originalEvent.isAllDay) newStartTime.atHourOfDay(originalEvent.startTime.hour) else newStartTime
         val updatedEvent = originalEvent.createCopy(
-            startTime = if(originalEvent.isAllDay) newStartTime.atStartOfDay else newStartTime ,
+            startTime = newStartTime ,
             endTime = newStartTime.plusMinutes(originalEvent.durationInMinutes),
         )
 
