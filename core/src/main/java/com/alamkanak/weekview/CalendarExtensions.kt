@@ -175,6 +175,8 @@ internal val Calendar.atStartOfDay: Calendar
 internal val Calendar.atEndOfDay: Calendar
     get() = withTimeAtEndOfPeriod(24)
 
+internal fun Calendar.atHourOfDay(hour: Int): Calendar = withTimeAtStartOfPeriod(hour)
+
 internal val Calendar.daysFromToday: Int
     get() {
         val diff = (atStartOfDay.timeInMillis - today().timeInMillis).toFloat()
